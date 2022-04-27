@@ -32,21 +32,21 @@ eva_list = list(map(lambda x: url + x, eva_list))
 print("Parsing each eva JSON file in parallel...")
 # ==========================================
 
-import multiprocessing as mp
 import requests
 import json
 
 # json_path = "http://ftp.ebi.ac.uk/pub/databases/opentargets/platform/21.11/output/etl/json/evidence/sourceId%3Deva/part-00000-4134a310-5042-4942-82ed-565f3d91eddd.c000.json"
 
+from joblib import Parallel, delayed
+
 def parse_json(json_path):
     print(json_path)
     content = requests.get(json_path)
     parsed_json = json.loads("[" + content.text.replace("}\n{", "},\n{") +"]")
-    return parsed_json
+    subkey = list(map(lambda x: list(x[k] for k in ('targetId', 'diseaseId', 'score')), parsed_json))
+    return subkey
 
-pool = mp.Pool(mp.cpu_count())
-eva_records = pool.map(parse_json, eva_list)
-pool.close()
+results = Parallel(n_jobs=4)(delayed(parse_json)(i) for i in eva_list)
 
 # ==========================================
 print("Pairing up DiseaseID with TargetID...")
