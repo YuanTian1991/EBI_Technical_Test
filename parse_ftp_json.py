@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This function conviniently parse JSON ftp page.
+# Author: Tian
 
 import requests
 import requests

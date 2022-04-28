@@ -55,8 +55,10 @@ targets_df = pd.DataFrame(targets_records, columns = ['id', "approvedSymbol"])
 pair_df = pair_df.merge(diseases_df, how='left', left_on="diseaseID", right_on="id")
 pair_df = pair_df.merge(targets_df, how='left', left_on="targetID", right_on="id")
 
-result_df = pair_df.loc[:,["targetID", "diseaseID", "name", "approvedSymbol"]].join(score_df)
+result_df = pair_df[["targetID", "diseaseID", "name", "approvedSymbol"]].join(score_df)
 result_df = result_df.sort_values(by=['median_score'], ascending=False)
+
+print("Export target-disease DataFrame into JSON file in local folder.")
 result_df.to_json("target_disease_pair.json", orient="records")
 
 
@@ -65,12 +67,22 @@ print("\n4. Count target-target pairs...")
 # ==========================================
 
 merge_df = result_df.merge(result_df, on='diseaseID')
-pair_target_df = merge_df.groupby(["targetID_x", "targetID_y"])["diseaseID"].apply(lambda x: (list(set(x), len(x)))).reset_index()
-pair_target_df = pair_target_df.loc[:, ["targetID_x", "targetID_y"]].join(pd.DataFrame((list(pair_target_df.diseaseID))))
+pair_target_df = merge_df.groupby(["targetID_x", "targetID_y"])["diseaseID"].apply(lambda x: (list(set(x)), len(x))).reset_index()
+pair_target_df = pair_target_df[["targetID_x", "targetID_y"]].join(pd.DataFrame((list(pair_target_df.diseaseID))))
 pair_target_df.columns = ["target_1", "target_2" ,"disease_list" , "disease_count"]
 
 pair_target_df = pair_target_df[(pair_target_df.disease_count >= 2) & (pair_target_df.target_1 != pair_target_df.target_2)]
 
-# pair_target_matrix = pd.crosstab(merge_df.targetID_x, merge_df.targetID_y, merge_df.diseaseID, aggfunc='count').fillna(0)
-# np.fill_diagonal(pair_target_matrix, 0)
+# ==========================================
+print("\n4.1. A better solution...")
+# ==========================================
+
+from find_target_combination import *
+
+target_2_disease_2 = find_target_combination(result_df, median_score_cutoff=0, n_targets=2, n_diseases=2)
+
+test = find_target_combination(result_df, median_score_cutoff=0.9, n_targets=2, n_diseases=2)
+test = find_target_combination(result_df, median_score_cutoff=0.8, n_targets=3, n_diseases=3)
+test = find_target_combination(result_df, median_score_cutoff=0.9, n_targets=5, n_diseases=10)
+
 
