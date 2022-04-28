@@ -1,55 +1,28 @@
 #!/usr/bin/env python3
 
 # This script use Python 3.8.10.
-# 1. Read all in the evidence files on FTP page.
+# Author: Tian
+# 1. Read all in the evidence/diseases/tagets files on FTP page.
 # 2. Count target-disease socres.
 # 3. Added disease ID and target (gene) ID.
 # 4. Export table as JSON.
 
-# ==========================================
-print("Parsing eva page for eva list...")
-# ==========================================
-
-import requests
-from bs4 import BeautifulSoup
-
-url = 'http://ftp.ebi.ac.uk/pub/databases/opentargets/platform/21.11/output/etl/json/evidence/sourceId%3Deva/'
-eva_ftp_page = requests.get(url)
-soup = BeautifulSoup(eva_ftp_page.text, features="html.parser")
-a_tags = soup.select('a')
-
-eva_list = []
-
-for element in a_tags:
-    eva_list.append(element['href'])
-
-del eva_list[0]
-eva_list = list(map(lambda x: url + x, eva_list))
+from parse_ftp_json import *
 
 # ==========================================
-print("Parsing each eva JSON file in parallel...")
+print("\n1. Reading JSON files from FTP...")
 # ==========================================
 
-import requests
-import json
-from functools import reduce
+eva_url = 'http://ftp.ebi.ac.uk/pub/databases/opentargets/platform/21.11/output/etl/json/evidence/sourceId%3Deva/'
+diseases_url = 'http://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/etl/json/diseases/'
+targets_url = "http://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/etl/json/targets/"
 
-# json_path = "http://ftp.ebi.ac.uk/pub/databases/opentargets/platform/21.11/output/etl/json/evidence/sourceId%3Deva/part-00000-4134a310-5042-4942-82ed-565f3d91eddd.c000.json"
-
-from joblib import Parallel, delayed
-
-def parse_json(json_path):
-    # print(json_path)
-    content = requests.get(json_path)
-    parsed_json = json.loads("[" + content.text.replace("}\n{", "},\n{") +"]")
-    subkey = list(map(lambda x: list(x[k] for k in ('targetId', 'diseaseId', 'score')), parsed_json))
-    return subkey
-
-eva_records = Parallel(n_jobs=min(80, len(eva_list)))(delayed(parse_json)(i) for i in eva_list)
-eva_records = reduce(lambda x, y: x+y, eva_records)
+eva_records = parse_ftp_json(eva_url, 80, ['targetId', 'diseaseId', 'score'])
+diseases_records = parse_ftp_json(diseases_url, 80, ['id', 'name'])
+targets_records = parse_ftp_json(targets_url, 80, ['id', 'approvedSymbol'])
 
 # ==========================================
-print("Pairing up DiseaseID with TargetID...")
+print("\n2. Pairing up DiseaseID with TargetID...")
 # ==========================================
 
 import pandas as pd
@@ -57,7 +30,7 @@ import statistics
 
 df = pd.DataFrame (eva_records, columns = ['targetID', 'diseaseID', "score"])
 
-score_list = list(df[(df.targetID  == "ENSG00000000419") & (df.diseaseID == "EFO_0003847")].score)
+# score_list = list(df[(df.targetID  == "ENSG00000000419") & (df.diseaseID == "EFO_0003847")].score)
 
 def score_statistic(score_list):
     tmp_median = statistics.median(score_list)
@@ -69,5 +42,20 @@ def score_statistic(score_list):
 
 score_value = df.groupby(['targetID', 'diseaseID'])['score'].apply(score_statistic).reset_index()
 score_df = pd.DataFrame((list(score_value.score)))
+score_df.columns = ["median_score", "top_1" ,"top_2", "top_3", "count"]
 
+print("Totally there are", len(score_value.index), "target-disease pairs.")
 
+# ==========================================
+print("\n3. Add Disease Name and Target Symbol...")
+# ==========================================
+
+pair_df = score_value
+diseases_df = pd.DataFrame(diseases_records, columns = ['id', "name"])
+targets_df = pd.DataFrame(targets_records, columns = ['id', "approvedSymbol"])
+
+pair_df = pair_df.merge(diseases_df, how='left', left_on="diseaseID", right_on="id")
+pair_df = pair_df.merge(targets_df, how='left', left_on="targetID", right_on="id")
+
+result_df = pair_df.loc[:,["targetID", "diseaseID", "name", "approvedSymbol"]].join(score_df)
+result_df.to_json("target_disease_pair.json", orient="records")

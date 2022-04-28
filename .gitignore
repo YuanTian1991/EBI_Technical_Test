@@ -1,0 +1,8 @@
+# Ignore everything
+*
+
+# Exceptions
+!.gitignore
+!*.py
+!*.json
+!*.md
