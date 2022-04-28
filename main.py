@@ -4,8 +4,8 @@
 # Author: Tian
 # 1. Read all in the evidence/diseases/tagets files on FTP page.
 # 2. Count target-disease socres.
-# 3. Added disease ID and target (gene) ID.
-# 4. Export table as JSON.
+# 3. Added disease ID and target (gene) ID. Export target-disease DataFrame as JSON.
+# 4. Count target-target pairs share a connection to at least two diseases.
 
 from parse_ftp_json import *
 
@@ -29,8 +29,6 @@ import pandas as pd
 import statistics
 
 df = pd.DataFrame (eva_records, columns = ['targetID', 'diseaseID', "score"])
-
-# score_list = list(df[(df.targetID  == "ENSG00000000419") & (df.diseaseID == "EFO_0003847")].score)
 
 def score_statistic(score_list):
     tmp_median = statistics.median(score_list)
@@ -58,4 +56,21 @@ pair_df = pair_df.merge(diseases_df, how='left', left_on="diseaseID", right_on="
 pair_df = pair_df.merge(targets_df, how='left', left_on="targetID", right_on="id")
 
 result_df = pair_df.loc[:,["targetID", "diseaseID", "name", "approvedSymbol"]].join(score_df)
+result_df = result_df.sort_values(by=['median_score'], ascending=False)
 result_df.to_json("target_disease_pair.json", orient="records")
+
+
+# ==========================================
+print("\n4. Count target-target pairs...")
+# ==========================================
+
+merge_df = result_df.merge(result_df, on='diseaseID')
+pair_target_df = merge_df.groupby(["targetID_x", "targetID_y"])["diseaseID"].apply(lambda x: (list(set(x), len(x)))).reset_index()
+pair_target_df = pair_target_df.loc[:, ["targetID_x", "targetID_y"]].join(pd.DataFrame((list(pair_target_df.diseaseID))))
+pair_target_df.columns = ["target_1", "target_2" ,"disease_list" , "disease_count"]
+
+pair_target_df = pair_target_df[(pair_target_df.disease_count >= 2) & (pair_target_df.target_1 != pair_target_df.target_2)]
+
+# pair_target_matrix = pd.crosstab(merge_df.targetID_x, merge_df.targetID_y, merge_df.diseaseID, aggfunc='count').fillna(0)
+# np.fill_diagonal(pair_target_matrix, 0)
+
