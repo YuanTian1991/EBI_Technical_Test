@@ -1,6 +1,15 @@
 # EBI_Technical_Test
 
+## Compute Setting
+All code is code/tested on a Ubuntu server, which has 128 cores and 250 RAM. No GPU is used.
+
 ## Usage
+
+Clone code:
+```bash
+git clone https://github.com/YuanTian1991/EBI_Technical_Test.git
+cd EBI_Technical_Test
+```
 
 Install Dependency:
 ```bash
@@ -10,6 +19,29 @@ pip3 install beautifulsoup4 joblib pandas
 Run python script:
 ```bash
 python3 main.py
+```
+
+## Highlight
+
+Two functions can be used for OpenTarget platform ETL automation. 
+
+`parse_ftp_json()` can be used to convinently parallelly preprocess most OpenTarget ftp JSON pages. Just need to assign an JSON folder url and columns(key) wants to extract, like:
+
+```python
+>> from parse_ftp_json import *
+>>> test = parse_ftp_json("http://ftp.ebi.ac.uk/pub/databases/opentargets/platform/21.11/output/etl/json/evidence/sourceId%3Dintogen/", 80, ['targetId', 'cohortDescription'])
+Parsing ftp page for JSON file list...
+Parsing each JSON file in parallel...
+```
+
+`find_target_combination()` function can be used to fine combinations of targets that shared same diseases according to evidence scores medians. Though some improvement is needed still, it provided a systemically way to adress target combination seeking problem. **This function requires a target-disease association dataframe as input.**
+
+```python
+>> from find_target_combination import *
+>> target_2_disease_2 = find_target_combination(result_df, median_score_cutoff=0, n_targets=2, n_diseases=2)
+Filtering df with median_score_cutoff 0
+Finding 2 target combinations with 2 shared diseases...
+  There are 700828 combinations for now.
 ```
 
 ## Code Explaination
@@ -101,3 +133,54 @@ Below is an example, in the first row: target `ENSG00000000419` and `ENSG0000000
 ```
 
 As above result shows, there are 700828 target-taget pairs that share at least two disease, when score value is not taken into consideration.
+
+Actually this question can be solved in a more systemically way, for example:
+* How to find 3 targets combinations that share 8 diseaseID?
+* Same question above but only consider target-disease association median\_score >= 0.8?
+
+So I code a function `find_target_combination` to solve this issue, which allows user to assign below three parameters:
+* `df`: A `result_df` in this report.
+* `median_score_cutoff`: A cutoff for median score calculated from eva file list.
+* `n_targets`: number of targets combinations.
+* `n_diseases`: number of shared diseases by all targets in each combinations.
+
+For example, below code will fine all 5-targets combinations that all targets have at least 0.9 median score in 10 shared diseases:
+
+```python
+>> test = find_target_combination(result_df, median_score_cutoff=0.9, n_targets=5, n_diseases=10)
+Finding 2 target combinations with 10 shared diseases...
+  There are 96 combinations for now.
+Finding 3 target combinations with 10 shared diseases...
+  There are 594 combinations for now.
+Finding 4 target combinations with 10 shared diseases...
+  There are 2832 combinations for now.
+Finding 5 target combinations with 10 shared diseases...
+  There are 10200 combinations for now.
+>>
+>>> test
+                                       merged_targets_id                                          diseaseID
+0      ENSG00000198712-ENSG00000198763-ENSG0000019880...  [Orphanet_551, Orphanet_206966, Orphanet_225, ...
+1      ENSG00000198712-ENSG00000198763-ENSG0000019880...  [Orphanet_551, Orphanet_206966, Orphanet_225, ...
+2      ENSG00000198712-ENSG00000198763-ENSG0000019880...  [Orphanet_551, Orphanet_206966, Orphanet_225, ...
+3      ENSG00000198712-ENSG00000198763-ENSG0000019880...  [Orphanet_551, Orphanet_206966, Orphanet_225, ...
+4      ENSG00000198712-ENSG00000198763-ENSG0000019880...  [Orphanet_551, Orphanet_206966, Orphanet_225, ...
+...                                                  ...                                                ...
+10195  ENSG00000228253-ENSG00000212907-ENSG0000019893...  [Orphanet_551, Orphanet_206966, Orphanet_225, ...
+10196  ENSG00000228253-ENSG00000212907-ENSG0000019893...  [Orphanet_551, Orphanet_96210, Orphanet_206966...
+10197  ENSG00000228253-ENSG00000212907-ENSG0000019893...  [Orphanet_551, Orphanet_206966, Orphanet_225, ...
+10198  ENSG00000228253-ENSG00000212907-ENSG0000019893...  [Orphanet_551, Orphanet_96210, Orphanet_206966...
+10199  ENSG00000228253-ENSG00000212907-ENSG0000019893...  [Orphanet_551, Orphanet_96210, Orphanet_225, E...
+
+[10200 rows x 2 columns]
+```
+
+Note that there are some limitations in this function, it may crach due to lack fo memory in certain parameter combinations, like `n_targets=5` while `n_diseases=2`. The combination is too much. For example below code is quite challenge to run, even one a server with 251G RAM:
+```python
+test = find_target_combination(result_df, median_score_cutoff=0, n_targets=3, n_diseases=2)
+```
+
+In this case, one potential solution in my mind now is to:
+1. firstly split combinations first, calculate separately, then merge them. For example: if `n_targets=20`, we calculated `n_targets=10` first, then merge two `n_targets=10` dataframes **without any** target\_ID duplicated. If still `n_targets=10` is too big, we divide again to merge two `n_targets=5` .etc. 
+2. In the mean time, still sometimes combinations may boosting too fast, maybe database like sqlite/hadoop can be used for batch work.
+3. Biologically, use pre-researched gene lists as constrains, to reduce calculation. For example, only select hundreds of genes in one pathway, then validate their co-existing status with this function.
+

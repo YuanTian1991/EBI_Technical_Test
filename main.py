@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# This script use Python 3.8.10.
+# This script use Python 3.9.5.
 # Author: Tian
 # 1. Read all in the evidence/diseases/tagets files on FTP page.
 # 2. Count target-disease socres.
@@ -73,6 +73,8 @@ pair_target_df.columns = ["target_1", "target_2" ,"disease_list" , "disease_coun
 
 pair_target_df = pair_target_df[(pair_target_df.disease_count >= 2) & (pair_target_df.target_1 != pair_target_df.target_2)]
 
+print("There are", len(pair_target_df), "target pairs share at least 2 diseases.")
+
 # ==========================================
 print("\n4.1. A better solution...")
 # ==========================================
@@ -84,5 +86,4 @@ target_2_disease_2 = find_target_combination(result_df, median_score_cutoff=0, n
 test = find_target_combination(result_df, median_score_cutoff=0.9, n_targets=2, n_diseases=2)
 test = find_target_combination(result_df, median_score_cutoff=0.8, n_targets=3, n_diseases=3)
 test = find_target_combination(result_df, median_score_cutoff=0.9, n_targets=5, n_diseases=10)
-
 
