@@ -56,7 +56,7 @@ pair_df = pair_df.merge(diseases_df, how='left', left_on="diseaseID", right_on="
 pair_df = pair_df.merge(targets_df, how='left', left_on="targetID", right_on="id")
 
 result_df = pair_df[["targetID", "diseaseID", "name", "approvedSymbol"]].join(score_df)
-result_df = result_df.sort_values(by=['median_score'], ascending=False)
+result_df = result_df.sort_values(by=['median_score'], ascending=True)
 
 print("Export target-disease DataFrame into JSON file in local folder.")
 result_df.to_json("target_disease_pair.json", orient="records")

@@ -1,4 +1,4 @@
-# EBI_Technical_Test
+# EBI Technical Test
 
 ## Compute Setting
 All code is code/tested on a Ubuntu server, which has 128 cores and 250 RAM. No GPU is used.
@@ -75,18 +75,18 @@ Then, we merge the result from step 2 with disease name from disease/target name
 
 ```python
 >>> result_df
-              targetID       diseaseID                                         name approvedSymbol  median_score  top_1  top_2  top_3  count
-30     ENSG00000001626     EFO_0009166             response to ivacaftor - efficacy           CFTR          0.97   0.97   0.97   0.97     33
-11899  ENSG00000138109     EFO_0005801                         cholesterol embolism         CYP2C9          0.97   0.97   0.97   0.97      9
-7372   ENSG00000115486     EFO_0005801                         cholesterol embolism           GGCX          0.97   0.97    NaN    NaN      1
-15294  ENSG00000157764  Orphanet_98733  Noonan syndrome and Noonan-related syndrome           BRAF          0.97   0.97   0.97   0.97      6
-9495   ENSG00000128595     EFO_0005801                         cholesterol embolism           CALU          0.97   0.97    NaN    NaN      1
-...                ...             ...                                          ...            ...           ...    ...    ...    ...    ...
-11882  ENSG00000138081      HP_0001249                      Intellectual disability         FBXO11          0.00   0.72   0.00   0.00      7
-23845  ENSG00000213918     EFO_0002690                 systemic lupus erythematosus         DNASE1          0.00   0.00    NaN    NaN      1
-11883  ENSG00000138081   MONDO_0007254                                breast cancer         FBXO11          0.00   0.00    NaN    NaN      1
-11913  ENSG00000138160      HP_0001657                        Prolonged QT interval          KIF11          0.00   0.00    NaN    NaN      1
-0      ENSG00000000419     EFO_0003847                           mental retardation           DPM1          0.00   0.00    NaN    NaN      1
+              targetID        diseaseID                                               name approvedSymbol  ...  top_1  top_2  top_3  count
+0      ENSG00000000419      EFO_0003847                                 mental retardation           DPM1  ...   0.00    NaN    NaN      1
+13541  ENSG00000145362  Orphanet_399805  Male infertility with azoospermia or oligozoos...           ANK2  ...   0.00    NaN    NaN      1
+13571  ENSG00000145700       HP_0001657                              Prolonged QT interval        ANKRD31  ...   0.00    NaN    NaN      1
+13607  ENSG00000145949       HP_0001657                              Prolonged QT interval          MYLK4  ...   0.00    NaN    NaN      1
+13611  ENSG00000145982      EFO_0003847                                 mental retardation          FARS2  ...   0.00    NaN    NaN      1
+...                ...              ...                                                ...            ...  ...    ...    ...    ...    ...
+7880   ENSG00000117877      EFO_0004647            response to platinum based chemotherapy         POLR1G  ...   0.97    NaN    NaN      1
+21095  ENSG00000186115      EFO_0005801                               cholesterol embolism         CYP4F2  ...   0.97    NaN    NaN      1
+30     ENSG00000001626      EFO_0009166                   response to ivacaftor - efficacy           CFTR  ...   0.97   0.97   0.97     33
+15294  ENSG00000157764   Orphanet_98733        Noonan syndrome and Noonan-related syndrome           BRAF  ...   0.97   0.97   0.97      6
+9495   ENSG00000128595      EFO_0005801                               cholesterol embolism           CALU  ...   0.97    NaN    NaN      1
 
 [25132 rows x 9 columns]
 ```
